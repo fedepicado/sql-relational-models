@@ -51,6 +51,9 @@ ORDER BY (BirthDate)
 
 SELECT * FROM HumanResources.Department
 
+-- Ejecicio 10: Mostrar el contenido de la tabla Departments
+
+SELECT * FROM HumanResources.Department
 
 -- Ejecicio 11: ¿Cuáles son los departamentos que están agrupados como “Manufacturing” ó como “Quality Assurance”?
 
@@ -80,9 +83,7 @@ SELECT * FROM Production.Product
 
 -- Ejercicio 15: Hallar los productos que no tengan asignado color.
 
-SELECT Name, Color
-FROM Production.Product 
-WHERE Color IS NULL
+SELECT Name, ColorFROM Production.Product WHERE Color IS NULL
 
 -- Ejercicio 16: Para todos los productos que tengan asignado algún color y que tengan un stock
 -- (SafetyStockLevel) mayor a 900, mostrar su id, nombre y color. Ordernarlo por id descendente
@@ -92,7 +93,6 @@ SELECT ProductID, Name, Color, SafetyStockLevel
 FROM Production.Product 
 WHERE Color IS NOT NULL and SafetyStockLevel > 900
 ORDER BY ProductID ASC, Color DESC
-
 
 -- Ejercicio 17: Hallar el Id y el nombre de los productos cuyo nombre comience con “Chain”
 
@@ -117,12 +117,16 @@ SELECT TOP(10) BusinessEntityID, FirstName, LastName
 FROM Person.Person
 WHERE LastName LIKE '%___es%'
 
--- Ejercicio 21,22,23: Usando la tabla SpecialOffer del esquema Sales, mostrar la diferencia entre MinQty y MaxQty, con el id y descripción.
+
+-- Ejercicio 21: Usando la tabla SpecialOffer del esquema Sales, mostrar la diferencia entre MinQty y MaxQty, con el id y descripción.
+SELECT TOP(10)* FROM Sales.SpecialOffer
+
+-- Ejercicio 21,22,23: Usando la tabla SpecialOffer del esquema Sales, mostrar la diferencia entre MinQty y MaxQty, con el id y descripción.
 SELECT SpecialOfferID, Description, MaxQty, MinQty,
     CASE 
         WHEN MinQty = 0 OR MinQty IS NULL OR MaxQty IS NULL THEN NULL
         ELSE MaxQty - MinQty 
-    END AS DiFerencia
+    END AS Diferencia
 FROM Sales.SpecialOffer
 
 -- Ejercicio 24: ¿Cuántos clientes están almacenados en la tabla Customers?
@@ -132,16 +136,99 @@ FROM Sales.Customer
 
 -- Ejercicio 25: ¿Cuál es la cantidad de clientes por tienda? Y cuál es la cantidad de clientes por territorio para
 -- aquellos territorios que tengan más de 100 clientes? ¿Cuáles son las tiendas (su Id) asociadas
--- al territorio Id 4 que tienen menos de 2 clientes?SELECT StoreID, COUNT(CustomerID)
-FROM Sales.CustomerGROUP BY StoreIDSELECT TerritoryID, COUNT(CustomerID)
-FROM Sales.CustomerGROUP BY TerritoryIDHAVING COUNT(CustomerID) > 100SELECT StoreID
+-- al territorio Id 4 que tienen menos de 2 clientes?
+
+SELECT StoreID, COUNT(CustomerID)
+FROM Sales.Customer
+GROUP BY StoreID
+
+SELECT TerritoryID, COUNT(CustomerID)
+FROM Sales.Customer
+GROUP BY TerritoryIDHAVING COUNT(CustomerID) > 100
+
+SELECT StoreID
 FROM Sales.Customer
 WHERE TerritoryID = 4
 GROUP BY StoreID
 HAVING COUNT(CustomerID) < 2
 
 -- Ejercicio 26: Para la tabla SalesOrderDetail del esquema Sales, calcular cuál es la cantidad total de items
--- ordenados (OrderQty) para el producto con Id igual a 778.SELECT SUM(OrderQty) AS TotalItemsOrdered
-FROM Sales.SalesOrderDetail
-WHERE ProductID = 778
+-- ordenados (OrderQty) para el producto con Id igual a 778.
 
+SELECT SUM(OrderQty) AS TotalItemsOrdered
+FROM Sales.SalesOrderDetail
+WHERE ProductID = 778
+
+--27.Usando la misma tabla,
+SELECT TOP(10) *
+FROM Sales.SalesOrderDetail
+
+---a) Cuál es el precio unitario más caro vendido?
+SELECT MAX(UnitPrice) 
+FROM Sales.SalesOrderDetail
+
+---b) Cuál es el número total de items ordenado para cada producto?
+
+SELECT ProductID, SUM(OrderQty) 
+FROM Sales.SalesOrderDetail
+GROUP BY ProductID
+
+---c) Cuál es la cantidad de líneas de cada orden?
+
+SELECT SalesOrderID, COUNT(*) AS LineasPorOrden
+FROM Sales.SalesOrderDetail
+GROUP BY SalesOrderID
+
+-- d) Cuál es la cantidad de líneas de cada orden, sólo para aquellas órdenes que tengan
+-- más de 3 líneas? Ordenar por id de orden descendente.
+
+SELECT SalesOrderID, COUNT(*) AS LineasPorOrden
+FROM Sales.SalesOrderDetail
+GROUP BY SalesOrderID
+HAVING COUNT(*) > 3
+ORDER BY SalesOrderID DESC
+
+-- e) Cuál es el importe total (LineTotal) de cada orden, para aquellas que tengan menos de
+-- 3 líneas?
+
+SELECT SalesOrderID, COUNT(*) AS LineasPorOrden, SUM(LineTotal) AS ImporteTotal
+FROM Sales.SalesOrderDetail
+GROUP BY SalesOrderID
+HAVING COUNT(*) < 3
+
+-- f) Cuál es la cantidad distinta de productos ordenados?
+
+SELECT COUNT(DISTINCT ProductID) AS CantProdDistintos
+FROM Sales.SalesOrderDetail 
+
+-- Ejercicio 28: Usando la tabla SalesOrderHeader, cuál es la cantidad de órdenes emitidas en cada año?
+-- (usar la función Year, aplicada a la columna OrderDate).
+
+
+SELECT TOP(10) *
+FROM Sales.SalesOrderHeader
+
+SELECT YEAR(OrderDate),COUNT(SalesOrderID)
+FROM Sales.SalesOrderHeader
+GROUP BY YEAR(OrderDate)
+
+-- Ejercicio 29.Usando la misma tabla, cuál es la cantidad de órdenes emitidas para cada cliente en cada año?
+
+SELECT YEAR(OrderDate),CustomerID, COUNT(SalesOrderID)
+FROM Sales.SalesOrderHeader
+GROUP BY YEAR(OrderDate), CustomerID
+
+-- Ejercicio 30: Para los empleados, contar la cantidad de empleados solteros nacidos por año y por género,
+-- para aquellos años donde hayan nacido más de 10 empleados.
+
+SELECT TOP(10) * 
+FROM HumanResources.Employee
+
+SELECT     
+	YEAR(BirthDate) AS AñoNacimiento,
+    Gender AS Genero,
+    COUNT(BusinessEntityID) AS CantEmpleados
+FROM HumanResources.Employee
+WHERE MaritalStatus = 'S'
+GROUP BY YEAR(BirthDate), Gender
+HAVING COUNT(*) > 10
