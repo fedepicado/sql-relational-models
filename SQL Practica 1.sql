@@ -132,7 +132,7 @@ FROM Sales.Customer
 
 -- Ejercicio 25: ¿Cuál es la cantidad de clientes por tienda? Y cuál es la cantidad de clientes por territorio para
 -- aquellos territorios que tengan más de 100 clientes? ¿Cuáles son las tiendas (su Id) asociadas
--- al territorio Id 4 que tienen menos de 2 clientes?SELECT StoreID, COUNT(CustomerID)
+-- al territorio Id 4 que tienen menos de 2 clientes?SELECT StoreID, COUNT(CustomerID)
 FROM Sales.CustomerGROUP BY StoreIDSELECT TerritoryID, COUNT(CustomerID)
 FROM Sales.CustomerGROUP BY TerritoryIDHAVING COUNT(CustomerID) > 100SELECT StoreID
 FROM Sales.Customer
@@ -143,5 +143,5 @@ HAVING COUNT(CustomerID) < 2
 -- Ejercicio 26: Para la tabla SalesOrderDetail del esquema Sales, calcular cuál es la cantidad total de items
 -- ordenados (OrderQty) para el producto con Id igual a 778.SELECT SUM(OrderQty) AS TotalItemsOrdered
 FROM Sales.SalesOrderDetail
-WHERE ProductID = 778;
+WHERE ProductID = 778
 
