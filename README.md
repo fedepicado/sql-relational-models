@@ -1,4 +1,3 @@
-# Modelos Relacionales 2025
+# Modelos Relacionales
 
-Este repositorio muestra el desarrollo de las practicas de la materia.
-
+Maestria en Explotacion de Datos y Descibrimiento del conocimiento - UBA 2025
