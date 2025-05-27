@@ -20,7 +20,8 @@ INNER JOIN HumanResources.EmployeeDepartmentHistory edh
 INNER JOIN HumanResources.Department d
 	ON d.DepartmentID= edh.DepartmentID
 
--- RANK le da el mismo lugar si tienen el mismo valor. 
+-- RANK le da el mismo lugar si tienen el mismo valor y salta al siguiente rango
+
 
 
 -- 2. Orden de ventas por fecha
@@ -210,30 +211,63 @@ SELECT
     DATEDIFF(DAY, LAG(OrderDate) OVER (PARTITION BY CustomerID ORDER BY OrderDate ASC), OrderDate) AS Diferencia_dias
 FROM Sales.SalesOrderHeader;
 
-SELECT 
-    CustomerID AS Cliente,
-    CAST(OrderDate AS DATE) AS Compra_actual,
-    LAG(CAST(OrderDate AS DATE)) OVER (PARTITION BY CustomerID ORDER BY CAST(OrderDate AS DATE)) AS Compra_anterior,
-    DATEDIFF(DAY,
-        LAG(CAST(OrderDate AS DATE)) OVER (PARTITION BY CustomerID ORDER BY CAST(OrderDate AS DATE)),
-        CAST(OrderDate AS DATE)) AS Dias_entre_compras
-FROM Sales.SalesOrderHeader;
-
-SELECT 
-    CustomerID AS Cliente,
-    CONVERT(DATE, OrderDate) AS Compra_actual,
-    LAG(CONVERT(DATE, OrderDate)) OVER (PARTITION BY CustomerID ORDER BY CONVERT(DATE, OrderDate)) AS Compra_anterior,
-    DATEDIFF(DAY,
-        LAG(CONVERT(DATE, OrderDate)) OVER (PARTITION BY CustomerID ORDER BY CONVERT(DATE, OrderDate)),
-        CONVERT(DATE, OrderDate)) AS Dias_entre_compras
-FROM Sales.SalesOrderHeader;
-
--- La diferencia de dias no es la correcta..
-
 
 -- 9. Top 3 productos más vendidos por categoría.
 -- Obtén los tres productos más vendidos (por cantidad) en cada categoría de producto usando DENSE_RANK().
 
+SELECT top 5 * FROM Sales.SalesOrderDetail
+SELECT top 5 * FROM Production.Product
+SELECT top 5 * FROM Production.ProductSubCategory
+SELECT top 5 * FROM Production.ProductCategory
+
+-- armo CTE con resumen de los productos vendidos, categoria, nombre y calculo la cantidad vendida de cada producto
+WITH cantidad_prod AS (
+SELECT 
+	pc.ProductCategoryID,
+    pc.Name AS Nombre_Categoria,
+    p.ProductID,
+    p.Name AS Nombre_producto,
+    SUM(sod.OrderQty) AS Total_cantidad
+from Sales.SalesOrderDetail sod
+INNER JOIN Production.Product p
+	ON p.ProductID=sod.ProductID
+INNER JOIN Production.ProductSubCategory psc
+	ON psc.ProductSubcategoryID=p.ProductSubcategoryID
+INNER JOIN Production.ProductCategory pc
+	ON pc.ProductCategoryID=psc.ProductcategoryID
+GROUP BY pc.ProductCategoryID, pc.Name, p.ProductID, p.Name
+)
+,-- armo el dense_rank, no saltea rango cuando hay empates.
+Productos_Rank AS (
+    SELECT 
+        *,
+        DENSE_RANK() OVER (PARTITION BY ProductCategoryID ORDER BY Total_cantidad DESC) AS Ranking_categoria
+    FROM cantidad_prod
+)
+-- Me quedo con los primeros 3
+SELECT 
+    ProductCategoryID,
+    Nombre_Categoria,
+    ProductID,
+    Nombre_producto,
+    Total_cantidad,
+    Ranking_categoria
+FROM Productos_Rank
+WHERE Ranking_categoria <= 3
+ORDER BY ProductCategoryID, Ranking_categoria
+
 
 -- 10. Detección de cambios de tarifa.
 -- Para cada empleado, detecta cuándo cambió su tarifa (Rate) respecto a la anterior usando LAG().
+
+SELECT * FROM HumanResources.Employee
+SELECT * FROM HumanResources.EmployeePayHistory
+
+WITH Aumentos AS (
+SELECT 
+	BusinessEntityID AS Empleado,
+	LAG(RateChangeDate) OVER (PARTITION BY BusinessEntityID ORDER BY rate) AS Cambio_tarifa
+FROM HumanResources.EmployeePayHistory
+)
+SELECT * FROM Aumentos
+WHERE Cambio_tarifa IS NOT NULL
