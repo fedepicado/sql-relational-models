@@ -271,3 +271,85 @@ FROM HumanResources.EmployeePayHistory
 )
 SELECT * FROM Aumentos
 WHERE Cambio_tarifa IS NOT NULL
+
+-- Nivel 1: LAG basico 
+-- Para cada producto en la tabla Production.Product, muestra el nombre del producto, su precio actual (ListPrice) 
+-- y el precio del producto anterior (ordenado por ProductID). Solo productos con precio > 0.
+
+select top 5 * from Production.Product
+
+SELECT 
+    ProductID,
+    Name,
+    ListPrice AS PrecioActual,
+    LAG(ListPrice) OVER (ORDER BY ProductID) AS PrecioAnterior
+FROM Production.Product
+WHERE ListPrice > 0
+ORDER BY ProductID
+
+-- Nivel 2: LAG con cálculos
+-- Extiende la consulta anterior para calcular la diferencia de precio entre el producto actual y el anterior. 
+-- Identifica si el precio subió, bajó o se mantuvo igual.
+
+SELECT 
+    ProductID,
+    Name,
+    ListPrice AS PrecioActual,
+    LAG(ListPrice) OVER (ORDER BY ProductID) AS PrecioAnterior,
+	ListPrice / NULLIF(LAG(ListPrice) OVER (ORDER BY ProductID), 0) as Diferencias,
+	CASE
+		WHEN ListPrice / NULLIF(LAG(ListPrice) OVER (ORDER BY ProductID), 0) > 1 THEN 'Subio'
+		WHEN ListPrice / NULLIF(LAG(ListPrice) OVER (ORDER BY ProductID), 0) < 1 THEN 'Bajo'
+		ELSE 'No hubo cambio'
+	END as Estado
+FROM Production.Product
+WHERE ListPrice > 0
+ORDER BY ProductID
+
+-- Nivel 3: LAG con PARTITION
+-- "Ahora agrupa por subcategoría (ProductSubcategoryID). 
+-- Para cada subcategoría, muestra cómo cambian los precios entre productos consecutivos dentro de esa subcategoría."
+
+with prod_ventas as (
+SELECT 
+    ProductID,
+    Name,
+    ListPrice AS PrecioActual,
+    LAG(ListPrice) OVER (PARTITION BY ProductSubcategoryID ORDER BY ProductID ) AS PrecioAnterior,
+	ListPrice / NULLIF(LAG(ListPrice) OVER (PARTITION BY ProductSubcategoryID ORDER BY ProductID), 0) as Diferencias
+FROM Production.Product
+WHERE ListPrice > 0
+)
+Select 
+	ProductID,
+	Name,
+	PrecioActual,
+	PrecioAnterior,
+	Case 
+		WHEN Diferencias >1 THEN 'Subio'
+		WHEN Diferencias <1 THEN 'Bajo'
+	ELSE 'igual'
+	END as cambio
+FROM prod_ventas
+
+-- Nivel 4: LAG + LEAD juntos
+-- "Para cada producto, muestra el precio anterior, actual y siguiente dentro de su subcategoría. 
+-- Identifica los productos que son 'picos' (más caros que el anterior Y el siguiente)."
+
+SELECT 
+    ProductID,
+    Name,
+    ProductSubcategoryID,
+    LAG(ListPrice) OVER (PARTITION BY ProductSubcategoryID ORDER BY ProductID) AS PrecioAnterior,
+    ListPrice AS PrecioActual,
+    LEAD(ListPrice) OVER (PARTITION BY ProductSubcategoryID ORDER BY ProductID) AS PrecioSiguiente,
+    CASE 
+        WHEN ListPrice > LAG(ListPrice) OVER (PARTITION BY ProductSubcategoryID ORDER BY ProductID)
+         AND ListPrice > LEAD(ListPrice) OVER (PARTITION BY ProductSubcategoryID ORDER BY ProductID)
+        THEN 'Es un pico'
+        ELSE 'No es pico'
+    END AS EsPico
+FROM Production.Product
+WHERE ListPrice > 0 
+  AND ProductSubcategoryID IS NOT NULL
+ORDER BY ProductSubcategoryID, ProductID;
