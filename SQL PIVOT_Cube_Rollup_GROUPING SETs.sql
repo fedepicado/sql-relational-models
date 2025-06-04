@@ -113,7 +113,9 @@ ORDER BY ParentTable, ReferencedTable;
 
 
 SELECT
-	CalendarYear,	SalesTerritoryGroup,	SUM(SalesAmount) AS TotalVentas
+	CalendarYear,
+	SalesTerritoryGroup,
+	SUM(SalesAmount) AS TotalVentas
 FROM FactResellerSales AS frs
 JOIN DimDate AS d ON frs.OrderDateKey = d.DateKey
 JOIN DimSalesTerritory AS st ON frs.SalesTerritoryKey = st.SalesTerritoryKey
@@ -123,7 +125,11 @@ ORDER BY
 CalendarYear, SalesTerritoryGroup;
 
 
--- ROLLUP: La cláusula ROLLUP en SQL Server se utiliza junto con la cláusula-- GROUP BY para generar subtotales y totales adicionales para una o-- más columnas especificadas. Proporciona un resumen jerárquico de-- los datos al incluir subtotales para combinaciones de columnas-- específicas.
+-- ROLLUP: La cláusula ROLLUP en SQL Server se utiliza junto con la cláusula
+-- GROUP BY para generar subtotales y totales adicionales para una o
+-- más columnas especificadas. Proporciona un resumen jerárquico de
+-- los datos al incluir subtotales para combinaciones de columnas
+-- específicas.
 
 SELECT 
     YEAR(fis.OrderDate) AS Año,

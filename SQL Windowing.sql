@@ -73,11 +73,12 @@ WHERE RowNumber = 2;
 -- reciben la fila extra.
 
 -- El problema del bonus llevado a este DB.
+Select top 5 * FROM  Sales.SalesOrderHeader
 
 WITH Vendedores AS (
 	SELECT
 		SalesPersonID, 
-		COUNT(SalesORderID) AS TotalVentas
+		COUNT(SalesOrderID) AS TotalVentas
 	FROM Sales.SalesOrderHeader
 	GROUP BY SalesPersonID
 ),
@@ -185,7 +186,6 @@ FROM Sales.SalesOrderHeader
 ORDER BY CustomerID, SalesOrderID;
 
 -- 
-
 SELECT 
 	CustomerID,
 	CAST(OrderDate AS DATE) AS OrderDate,
@@ -221,9 +221,3 @@ JOIN HumanResources.Employee e ON eph.BusinessEntityID = e.BusinessEntityID
 )
 SELECT DISTINCT JobTitle, Mediana_Cont,Mediana_Disc
 FROM PercentilesCalculados
-
-
-
-
-
-
